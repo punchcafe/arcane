@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -33,66 +34,96 @@ public class App {
         }
         List<Class> classes = new ArrayList<>();
 
-        for(String className : classStrings){
+        for (String className : classStrings) {
             try {
                 classes.add(Class.forName(className));
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
         }
-        HashMap<Class, Class[]>dependencyTree = new HashMap<>();
-        for(Class clazz: classes){
+        HashMap<Class, Class[]> dependencyTree = new HashMap<>();
+        for (Class clazz : classes) {
             dependencyTree.put(clazz, clazz.getConstructors()[0].getParameterTypes());
         }
         DependencyTree internalTree = new DependencyTree();
         System.out.println(classes);
         internalTree.resolve(dependencyTree);
         System.out.println("did it work?");
+        Map<Class, Object> objects = new HashMap<>();
+        for (Class clazzy : internalTree.getInternalMap().keySet()) {
+            try {
+                objects.put(clazzy, internalTree.getInternalMap().get(clazzy).initialiseInstance());
+            } catch (Exception ex) {
+                System.out.println("lol");
+            }
+        }
+        System.out.println("okay!");
+
 
     }
 }
 
-class DependencyTree{
-    private Map<Class<?>,ClassDependency> internalMap = new HashMap<>();
+class DependencyTree {
+    private Map<Class<?>, ClassDependency> internalMap = new HashMap<>();
     private boolean resolved = false;
 
-    public void resolve(Map<Class, Class[]> rawMap){
-        Map<Class<?>,ClassDependency> candidate = new HashMap<>();
-        for(Class clazz : rawMap.keySet()){
+    public void resolve(Map<Class, Class[]> rawMap) {
+        Map<Class<?>, ClassDependency> candidate = new HashMap<>();
+        for (Class clazz : rawMap.keySet()) {
             candidate.put(clazz, recursiveResolver(clazz, rawMap));
         }
         internalMap = candidate;
         resolved = true;
     }
 
-    public ClassDependency recursiveResolver(Class clazz, Map<Class, Class[]> rawMap){
+
+    public ClassDependency recursiveResolver(Class clazz, Map<Class, Class[]> rawMap) {
         Class[] dependenciesArray = rawMap.get(clazz);
-        if(rawMap.get(clazz).length == 0){
-            return new ClassDependency(clazz, Set.of());
+        if (rawMap.get(clazz).length == 0) {
+            return new ClassDependency(clazz, List.of());
         }
-        Set<ClassDependency> dependencies = new HashSet<>();
-        for(Class iteratingClass : dependenciesArray){
+        List<ClassDependency> dependencies = new ArrayList<>();
+        for (Class iteratingClass : dependenciesArray) {
             dependencies.add(recursiveResolver(iteratingClass, rawMap));
         }
         return new ClassDependency(clazz, dependencies);
     }
 
+    public Map<Class<?>, ClassDependency> getInternalMap() {
+        return this.internalMap;
+    }
+
 
 }
 
-class ClassDependency{
-    final Class<?> clazz;
-    final Set<ClassDependency> dependencies;
+class ClassDependency<T> {
+    final Class<T> clazz;
+    final List<ClassDependency> dependencies;
 
     @Override
-    public boolean equals(Object object){
-        if(object instanceof ClassDependency){
+    public boolean equals(Object object) {
+        if (object instanceof ClassDependency) {
             clazz.equals(((ClassDependency) object).getClazz());
         }
         return false;
     }
 
-    public ClassDependency(Class<?> clazz, Set<ClassDependency> dependencies){
+    public T initialiseInstance() throws IllegalAccessException, NoSuchMethodException, InstantiationException, InvocationTargetException {
+
+        if (dependencies.size() == 0) {
+            return clazz.getConstructor().newInstance();
+        } else {
+            Object[] initArgs = new Object[dependencies.size()];
+            Class[] initArgsTypes = new Class[dependencies.size()];
+            for (int i = 0; i < dependencies.size(); i++) {
+                initArgs[i] = dependencies.get(i).initialiseInstance();
+                initArgsTypes[i] = dependencies.get(i).getClazz();
+            }
+            return clazz.getConstructor(initArgsTypes).newInstance(initArgs);
+        }
+    }
+
+    public ClassDependency(Class<T> clazz, List<ClassDependency> dependencies) {
         this.clazz = clazz;
         this.dependencies = dependencies;
     }
@@ -101,29 +132,29 @@ class ClassDependency{
         return this.clazz;
     }
 
-    public Set<ClassDependency> getDependencies() {
+    public List<ClassDependency> getDependencies() {
         return this.dependencies;
     }
 
-    public boolean isLeaf(){
+    public boolean isLeaf() {
         return dependencies.size() == 0;
     }
 
-    public boolean isBranch(){
+    public boolean isBranch() {
         return dependencies.size() != 0;
     }
 
 }
 
 class ClassFinder {
-    public List<String> classFinder (String root) throws IOException{
+    public List<String> classFinder(String root) throws IOException {
         List<String> classes = new ArrayList<>();
         Set<Path> paths = Files.list(new File(root).toPath()).collect(Collectors.toSet());
-        for(Path p : paths){
-            if((new File(p.toString())).isDirectory()){
+        for (Path p : paths) {
+            if ((new File(p.toString())).isDirectory()) {
                 classes.addAll(classFinder(p.toString()));
             } else {
-                if(p.toString().endsWith(".java")){
+                if (p.toString().endsWith(".java")) {
                     classes.add(getFullClassName(p.toString()));
                 }
             }
@@ -132,18 +163,20 @@ class ClassFinder {
         return classes;
     }
 
-    private String getFullClassName(String javaFilePath) throws IOException{
+    private String getFullClassName(String javaFilePath) throws IOException {
         File file = new File(javaFilePath);
 
         BufferedReader br = new BufferedReader(new FileReader(file));
         String st;
         st = br.readLine();
-        while(!st.contains("package")){
+        while (!st.contains("package")) {
             st = br.readLine();
-            if(st == null){ return null;}
+            if (st == null) {
+                return null;
+            }
         }
-        String packageName = st.trim().substring(8,st.length()-1);
-        String className = file.getName().substring(0,file.getName().length()-5);
+        String packageName = st.trim().substring(8, st.length() - 1);
+        String className = file.getName().substring(0, file.getName().length() - 5);
         return (new StringBuilder()).append(packageName).append(".").append(className).toString();
     }
 }
