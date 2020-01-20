@@ -47,12 +47,14 @@ public class App {
         }
         DependencyTree internalTree = new DependencyTree();
         System.out.println(classes);
+        // Resolve Dependency Classes
         internalTree.resolve(dependencyTree);
         System.out.println("did it work?");
         Map<Class, Object> objects = new HashMap<>();
+        Shell shell = new Shell();
         for (Class clazzy : internalTree.getInternalMap().keySet()) {
             try {
-                objects.put(clazzy, internalTree.getInternalMap().get(clazzy).initialiseInstance());
+                objects.put(clazzy, internalTree.getInternalMap().get(clazzy).initialiseInstance(shell));
             } catch (Exception ex) {
                 System.out.println("lol");
             }
@@ -96,6 +98,27 @@ class DependencyTree {
 
 }
 
+class Shell {
+    // Spell book theme instead?
+    Map<String, Object> instanceMap;
+
+    public Shell(){
+        this.instanceMap = new HashMap<>();
+    }
+
+    public void seal(String identifier, Object instance){
+        instanceMap.put(identifier, instance);
+    }
+
+    public Object summon(String identifier){
+        return instanceMap.get(identifier);
+    }
+
+    public boolean contains(String identifier){
+        return instanceMap.get(identifier) != null;
+    }
+}
+
 class ClassDependency<T> {
     final Class<T> clazz;
     final List<ClassDependency> dependencies;
@@ -108,17 +131,32 @@ class ClassDependency<T> {
         return false;
     }
 
-    public T initialiseInstance() throws IllegalAccessException, NoSuchMethodException, InstantiationException, InvocationTargetException {
-
+    /**
+     * Returns an instance of the Class the ClassDependency represents.
+     * @param shell
+     * @return
+     * @throws IllegalAccessException
+     * @throws NoSuchMethodException
+     * @throws InstantiationException
+     * @throws InvocationTargetException
+     */
+    public T initialiseInstance(Shell shell) throws IllegalAccessException, NoSuchMethodException, InstantiationException, InvocationTargetException {
+        //May need to break this up and rename
         if (dependencies.size() == 0) {
-            return clazz.getConstructor().newInstance();
+            if(shell.contains(clazz.toString())){
+                return (T) shell.summon(clazz.toString());
+            }
+            T object = clazz.getConstructor().newInstance();
+            shell.seal(clazz.toString(), object);
+            return object;
         } else {
             Object[] initArgs = new Object[dependencies.size()];
             Class[] initArgsTypes = new Class[dependencies.size()];
             for (int i = 0; i < dependencies.size(); i++) {
-                initArgs[i] = dependencies.get(i).initialiseInstance();
+                initArgs[i] = dependencies.get(i).initialiseInstance(shell);
                 initArgsTypes[i] = dependencies.get(i).getClazz();
             }
+            // Need initialisaztion saving here
             return clazz.getConstructor(initArgsTypes).newInstance(initArgs);
         }
     }
