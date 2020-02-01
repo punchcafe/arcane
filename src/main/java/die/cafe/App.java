@@ -37,6 +37,8 @@ public class App {
         for (String className : classStrings) {
             try {
                 classes.add(Class.forName(className));
+                final var annotations = Class.forName(className).getAnnotations();
+                System.out.println("lol");
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -45,9 +47,14 @@ public class App {
         for (Class clazz : classes) {
             dependencyTree.put(clazz, clazz.getConstructors()[0].getParameterTypes());
         }
+        /**
+         * TO DO:
+         * ADD new Instance Generator code here and see what happens!
+         */
         DependencyTree internalTree = new DependencyTree();
         System.out.println(classes);
         // Resolve Dependency Classes
+        // Use class.name.MyClass:spell-name
         internalTree.resolve(dependencyTree);
         System.out.println("did it work?");
         Map<Class, Object> objects = new HashMap<>();
@@ -94,8 +101,6 @@ class DependencyTree {
     public Map<Class<?>, ClassDependency> getInternalMap() {
         return this.internalMap;
     }
-
-
 }
 
 class Shell {

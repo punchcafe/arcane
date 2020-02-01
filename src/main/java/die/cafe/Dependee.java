@@ -1,5 +1,6 @@
 package die.cafe;
 
+@SpellBookPage
 class Dependee {
 
     private Dependant dependant;
