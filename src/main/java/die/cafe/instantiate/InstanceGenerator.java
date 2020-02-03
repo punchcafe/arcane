@@ -15,6 +15,8 @@ public class InstanceGenerator<T> {
     // Initially uses class as an identifier, but eventually will use names.
     private Map<Class<?>, Object> instanceGeneratorCache;
 
+    // TODO: remove the need for external dependency tree creation ?
+
     public InstanceGenerator(Class<T> generateSubject,
                              Map<Class<?>, List<Class<?>>> dependencyMap,
                              Map<Class<?>, Object> instanceGeneratorCache) {
@@ -32,8 +34,10 @@ public class InstanceGenerator<T> {
         final Object[] dependencies = dependencyList.stream().map(clazz -> (new InstanceGenerator(clazz, dependencyMap, instanceGeneratorCache)).generate()).collect(Collectors.toUnmodifiableList()).toArray();
         final Constructor<T> constructor;
         try {
-            constructor = instanceClass.getConstructor(dependencyList.toArray(new Class[]{}));
-            return constructor.newInstance(dependencies);
+            constructor = instanceClass.getConstructor(dependencyList.toArray(new Class[dependencyList.size()]));
+            final var instance = constructor.newInstance(dependencies);
+            instanceGeneratorCache.put(instanceClass, instance);
+            return instance;
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
             e.printStackTrace();
             return null;

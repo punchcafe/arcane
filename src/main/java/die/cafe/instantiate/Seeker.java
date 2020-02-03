@@ -20,7 +20,8 @@ import java.util.stream.Collectors;
 public class Seeker {
 
     public List<Class> allSpellBookPages(String path){
-        return allSpellBookPages(classFileFinder(path));
+        return null;
+        //allSpellBookPages(classFileFinder(path));
     }
 
     List<Class> allSpellBookPageClasses(List<String> classNames){

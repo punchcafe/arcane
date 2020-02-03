@@ -3,6 +3,8 @@
  */
 package die.cafe;
 
+import die.cafe.instantiate.InstanceGenerator;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -20,6 +22,7 @@ public class App {
     }
 
     public static void main(String[] args) {
+        // TODO: refactor tyo use class path here
         String dirName = ".";
 
         ClassFinder finder = new ClassFinder();
@@ -32,162 +35,44 @@ public class App {
             e.printStackTrace();
             classStrings = List.of();
         }
+
         List<Class> classes = new ArrayList<>();
 
         for (String className : classStrings) {
             try {
-                classes.add(Class.forName(className));
+                var clazz = Class.forName(className);
+                if(clazz.getAnnotations().length > 0) {
+                    // TODO: change to match @SpellbookPage
+                    classes.add(clazz);
+                }
                 final var annotations = Class.forName(className).getAnnotations();
-                System.out.println("lol");
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
         }
-        HashMap<Class, Class[]> dependencyTree = new HashMap<>();
+        /// all the magic is here
+        HashMap<Class<?>, List<Class<?>>> dependencyMapForGenerator = new HashMap<>();
+
         for (Class clazz : classes) {
-            dependencyTree.put(clazz, clazz.getConstructors()[0].getParameterTypes());
+            if(clazz.getConstructors().length == 0){
+                // TODO: consider Behaviour
+                continue;
+            }
+            // Currently assumes one constructor.
+            dependencyMapForGenerator.put(clazz, List.of(clazz.getConstructors()[0].getParameterTypes()));
         }
-        /**
-         * TO DO:
-         * ADD new Instance Generator code here and see what happens!
-         */
-        DependencyTree internalTree = new DependencyTree();
-        System.out.println(classes);
-        // Resolve Dependency Classes
-        // Use class.name.MyClass:spell-name
-        internalTree.resolve(dependencyTree);
-        System.out.println("did it work?");
-        Map<Class, Object> objects = new HashMap<>();
-        Shell shell = new Shell();
-        for (Class clazzy : internalTree.getInternalMap().keySet()) {
-            try {
-                objects.put(clazzy, internalTree.getInternalMap().get(clazzy).initialiseInstance(shell));
-            } catch (Exception ex) {
-                System.out.println("lol");
+
+        Map<Class<?>, Object> objectCache = new HashMap<>();
+
+        for (Class clazz : classes) {
+            if(objectCache.get(clazz) == null && !clazz.isInterface()) {
+                objectCache.put(clazz,(new InstanceGenerator(clazz, dependencyMapForGenerator, objectCache)).generate());
             }
         }
-        System.out.println("okay!");
-
-
+        System.out.println("For break point");
     }
 }
 
-class DependencyTree {
-    private Map<Class<?>, ClassDependency> internalMap = new HashMap<>();
-    private boolean resolved = false;
-
-    public void resolve(Map<Class, Class[]> rawMap) {
-        Map<Class<?>, ClassDependency> candidate = new HashMap<>();
-        for (Class clazz : rawMap.keySet()) {
-            candidate.put(clazz, recursiveResolver(clazz, rawMap));
-        }
-        internalMap = candidate;
-        resolved = true;
-    }
-
-
-    public ClassDependency recursiveResolver(Class clazz, Map<Class, Class[]> rawMap) {
-        Class[] dependenciesArray = rawMap.get(clazz);
-        if (rawMap.get(clazz).length == 0) {
-            return new ClassDependency(clazz, List.of());
-        }
-        List<ClassDependency> dependencies = new ArrayList<>();
-        for (Class iteratingClass : dependenciesArray) {
-            dependencies.add(recursiveResolver(iteratingClass, rawMap));
-        }
-        return new ClassDependency(clazz, dependencies);
-    }
-
-    public Map<Class<?>, ClassDependency> getInternalMap() {
-        return this.internalMap;
-    }
-}
-
-class Shell {
-    // Spell book theme instead?
-    Map<String, Object> instanceMap;
-
-    public Shell(){
-        this.instanceMap = new HashMap<>();
-    }
-
-    public void seal(String identifier, Object instance){
-        instanceMap.put(identifier, instance);
-    }
-
-    public Object summon(String identifier){
-        return instanceMap.get(identifier);
-    }
-
-    public boolean contains(String identifier){
-        return instanceMap.get(identifier) != null;
-    }
-}
-
-class ClassDependency<T> {
-    final Class<T> clazz;
-    final List<ClassDependency> dependencies;
-
-    @Override
-    public boolean equals(Object object) {
-        if (object instanceof ClassDependency) {
-            clazz.equals(((ClassDependency) object).getClazz());
-        }
-        return false;
-    }
-
-    /**
-     * Returns an instance of the Class the ClassDependency represents.
-     * @param shell
-     * @return
-     * @throws IllegalAccessException
-     * @throws NoSuchMethodException
-     * @throws InstantiationException
-     * @throws InvocationTargetException
-     */
-    public T initialiseInstance(Shell shell) throws IllegalAccessException, NoSuchMethodException, InstantiationException, InvocationTargetException {
-        //May need to break this up and rename
-        if (dependencies.size() == 0) {
-            if(shell.contains(clazz.toString())){
-                return (T) shell.summon(clazz.toString());
-            }
-            T object = clazz.getConstructor().newInstance();
-            shell.seal(clazz.toString(), object);
-            return object;
-        } else {
-            Object[] initArgs = new Object[dependencies.size()];
-            Class[] initArgsTypes = new Class[dependencies.size()];
-            for (int i = 0; i < dependencies.size(); i++) {
-                initArgs[i] = dependencies.get(i).initialiseInstance(shell);
-                initArgsTypes[i] = dependencies.get(i).getClazz();
-            }
-            // Need initialisaztion saving here
-            return clazz.getConstructor(initArgsTypes).newInstance(initArgs);
-        }
-    }
-
-    public ClassDependency(Class<T> clazz, List<ClassDependency> dependencies) {
-        this.clazz = clazz;
-        this.dependencies = dependencies;
-    }
-
-    public Class<?> getClazz() {
-        return this.clazz;
-    }
-
-    public List<ClassDependency> getDependencies() {
-        return this.dependencies;
-    }
-
-    public boolean isLeaf() {
-        return dependencies.size() == 0;
-    }
-
-    public boolean isBranch() {
-        return dependencies.size() != 0;
-    }
-
-}
 
 class ClassFinder {
     public List<String> classFinder(String root) throws IOException {

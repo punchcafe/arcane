@@ -1,7 +1,7 @@
 package die.cafe;
 
 @SpellBookPage
-class Dependee {
+public class Dependee {
 
     private Dependant dependant;
 

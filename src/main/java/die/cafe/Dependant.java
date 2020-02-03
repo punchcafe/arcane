@@ -1,6 +1,7 @@
 package die.cafe;
 
-class Dependant {
+@SpellBookPage
+public class Dependant {
 
     public Dependant(){};
 
