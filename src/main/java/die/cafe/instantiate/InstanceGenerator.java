@@ -2,7 +2,6 @@ package die.cafe.instantiate;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -16,6 +15,7 @@ public class InstanceGenerator<T> {
     private Map<Class<?>, Object> instanceGeneratorCache;
 
     // TODO: remove the need for external dependency tree creation ?
+    // Or create a static method which takes a list of classes and crafts dependency map?
 
     public InstanceGenerator(Class<T> generateSubject,
                              Map<Class<?>, List<Class<?>>> dependencyMap,
@@ -24,6 +24,11 @@ public class InstanceGenerator<T> {
         this.dependencyList = dependencyMap.get(generateSubject);
         this.instanceGeneratorCache = instanceGeneratorCache;
         this.dependencyMap = dependencyMap;
+    }
+
+    public static Map<Class<?>, Object> generateContainer(List<Class> classes){
+        // TODO: Implement app logic here.
+        return null;
     }
 
     public T generate() {

@@ -51,6 +51,7 @@ public class App {
             }
         }
         /// all the magic is here
+        //TODO: extract to instance generator class
         HashMap<Class<?>, List<Class<?>>> dependencyMapForGenerator = new HashMap<>();
 
         for (Class clazz : classes) {
