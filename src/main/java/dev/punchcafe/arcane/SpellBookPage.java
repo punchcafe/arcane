@@ -1,4 +1,4 @@
-package die.cafe;
+package dev.punchcafe.arcane;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

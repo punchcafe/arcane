@@ -1,9 +1,11 @@
-package die.cafe.instantiate;
+package dev.punchcafe.arcane.instantiate;
+
+import dev.punchcafe.arcane.Incantation;
+import dev.punchcafe.arcane.SpellBookPage;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class InstanceGenerator<T> {
@@ -14,10 +16,7 @@ public class InstanceGenerator<T> {
     // Initially uses class as an identifier, but eventually will use names.
     private Map<Class<?>, Object> instanceGeneratorCache;
 
-    // TODO: remove the need for external dependency tree creation ?
-    // Or create a static method which takes a list of classes and crafts dependency map?
-
-    public InstanceGenerator(Class<T> generateSubject,
+    private InstanceGenerator(Class<T> generateSubject,
                              Map<Class<?>, List<Class<?>>> dependencyMap,
                              Map<Class<?>, Object> instanceGeneratorCache) {
         this.instanceClass = generateSubject;
@@ -26,12 +25,25 @@ public class InstanceGenerator<T> {
         this.dependencyMap = dependencyMap;
     }
 
-    public static Map<Class<?>, Object> generateContainer(List<Class> classes){
-        // TODO: Implement app logic here.
-        return null;
+    public static Map<Class<?>, Object> generateContainer(List<Class<?>> classes) {
+        final List<Class<?>> spellBookClasses = classes.stream().filter(clazz -> clazz.isAnnotationPresent(SpellBookPage.class)).collect(Collectors.toList());
+        HashMap<Class<?>, List<Class<?>>> dependencyTempMap = new HashMap<>();
+        for (Class<?> clazz : spellBookClasses) {
+            // For now ignore more than one incantation
+            Optional<Constructor<?>> injecteeConstructor = Arrays.stream(clazz.getConstructors()).filter(constructor -> constructor.isAnnotationPresent(Incantation.class)).findAny();
+            injecteeConstructor.ifPresent(constructor -> dependencyTempMap.put(clazz, List.of(constructor.getParameterTypes())));
+        }
+        final var dependencyMap = Map.copyOf(dependencyTempMap);
+        final var instanceCache = new HashMap<Class<?>, Object>();
+        for(Class<?> clazz : spellBookClasses){
+            if(instanceCache.get(clazz) == null) {
+                instanceCache.put(clazz, new InstanceGenerator(clazz, dependencyMap, instanceCache).generate());
+            }
+        }
+        return instanceCache;
     }
 
-    public T generate() {
+    private T generate() {
         final var cachedInstance = instanceGeneratorCache.get(instanceClass);
         if (cachedInstance != null) {
             return (T) cachedInstance;

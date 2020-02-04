@@ -1,4 +1,4 @@
-package die.cafe;
+package dev.punchcafe.arcane;
 
 /**
  * scans all classes

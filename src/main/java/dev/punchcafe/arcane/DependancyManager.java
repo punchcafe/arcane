@@ -1,4 +1,4 @@
-package die.cafe;
+package dev.punchcafe.arcane;
 
 import java.util.Map;
 import java.util.Set;

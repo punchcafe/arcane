@@ -1,8 +1,9 @@
-package die.cafe;
+package dev.punchcafe.arcane;
 
 @SpellBookPage
 public class Dependant {
 
+    @Incantation
     public Dependant(){};
 
 }

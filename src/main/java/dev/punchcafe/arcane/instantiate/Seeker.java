@@ -1,6 +1,6 @@
-package die.cafe.instantiate;
+package dev.punchcafe.arcane.instantiate;
 
-import die.cafe.SpellBookPage;
+import dev.punchcafe.arcane.SpellBookPage;
 
 import java.io.BufferedReader;
 import java.io.File;
