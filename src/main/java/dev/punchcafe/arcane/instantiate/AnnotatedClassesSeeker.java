@@ -44,6 +44,13 @@ public class AnnotatedClassesSeeker {
 
 
     private static List<String> classFileFinder(String path) throws IOException {
+        /**
+         * Instead start with the .class path and expand/contract depending on file
+         * names until the class has been successfully loaded.
+         * Alternatively, attempt to use recursion to find the package. Or at least
+         * always start at the file above, and work outwards. If it's none of those then it's the default
+         * package.
+         */
         List<String> classes = new ArrayList<>();
         Set<Path> paths = Files.list(new File(path).toPath()).collect(Collectors.toSet());
         for (Path p : paths) {
