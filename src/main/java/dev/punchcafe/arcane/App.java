@@ -3,84 +3,21 @@
  */
 package dev.punchcafe.arcane;
 
-import dev.punchcafe.arcane.instantiate.InstanceGenerator;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class App {
 
-    public static void main(String[] args) {
-        // TODO: refactor tyo use class path here
+    public static void main(String[] args) throws IOException {
+        // TODO: refactor to use class path here
         String dirName = ".";
 
-        ClassFinder finder = new ClassFinder();
+        final var spellBook = SpellBook.threadSpellBook(dirName);
 
-        List<String> classStrings;
-
-        try {
-            classStrings = finder.classFinder(dirName);
-        } catch (IOException e) {
-            e.printStackTrace();
-            classStrings = List.of();
-        }
-
-        List<Class<?>> classes = new ArrayList<>();
-
-        for (String className : classStrings) {
-            try {
-                classes.add(Class.forName(className));
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            }
-        }
-
-        final var container = InstanceGenerator.generateContainer(classes);
+        final var dependee = spellBook.summon(Dependee.class);
+        System.out.println("End");
         return;
     }
 }
 
 
-class ClassFinder {
-    public List<String> classFinder(String root) throws IOException {
-        List<String> classes = new ArrayList<>();
-        Set<Path> paths = Files.list(new File(root).toPath()).collect(Collectors.toSet());
-        for (Path p : paths) {
-            if ((new File(p.toString())).isDirectory()) {
-                classes.addAll(classFinder(p.toString()));
-            } else {
-                if (p.toString().endsWith(".java")) {
-                    classes.add(getFullClassName(p.toString()));
-                }
-            }
-            System.out.println(p.toString());
-        }
-        return classes;
-    }
-
-    private String getFullClassName(String javaFilePath) throws IOException {
-        File file = new File(javaFilePath);
-
-        BufferedReader br = new BufferedReader(new FileReader(file));
-        String st;
-        st = br.readLine();
-        while (!st.contains("package")) {
-            st = br.readLine();
-            if (st == null) {
-                return null;
-            }
-        }
-        String packageName = st.trim().substring(8, st.length() - 1);
-        String className = file.getName().substring(0, file.getName().length() - 5);
-        return (new StringBuilder()).append(packageName).append(".").append(className).toString();
-    }
-}
 

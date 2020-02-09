@@ -17,15 +17,15 @@ import java.util.stream.Collectors;
 /**
  * Responsible for finding all @SpellBookPage classes on the class path.
  */
-public class Seeker {
+public class AnnotatedClassesSeeker {
 
-    public List<Class> allSpellBookPages(String path){
-        return null;
-        //allSpellBookPages(classFileFinder(path));
+    public static List<Class<?>> allSpellBookPages(String path) throws IOException {
+        //TODO: ensure this uses an actual classpath
+        return allSpellBookPageClasses(classFileFinder(path));
     }
 
-    List<Class> allSpellBookPageClasses(List<String> classNames){
-        List<Class> classes = new ArrayList<>();
+    public static List<Class<?>> allSpellBookPageClasses(List<String> classNames){
+        List<Class<?>> classes = new ArrayList<>();
 
         for (String className : classNames) {
             try {
@@ -43,7 +43,7 @@ public class Seeker {
     }
 
 
-    private List<String> classFileFinder(String path) throws IOException {
+    private static List<String> classFileFinder(String path) throws IOException {
         List<String> classes = new ArrayList<>();
         Set<Path> paths = Files.list(new File(path).toPath()).collect(Collectors.toSet());
         for (Path p : paths) {
@@ -58,7 +58,7 @@ public class Seeker {
         return classes;
     }
 
-    private String getFullClassName(String javaFilePath) throws IOException {
+    private static String getFullClassName(String javaFilePath) throws IOException {
         File file = new File(javaFilePath);
 
         BufferedReader br = new BufferedReader(new FileReader(file));
