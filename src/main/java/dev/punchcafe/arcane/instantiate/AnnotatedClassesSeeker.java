@@ -20,7 +20,8 @@ public class AnnotatedClassesSeeker {
     public static List<Class<?>> allSpellBookPages(String classpath) throws IOException {
         //TODO: ensure this uses an actual classpath
         List<String> paths = List.of(classpath.split(":"));
-        Map<String, List<String>> classMap = classFileFinder(classpath, new HashMap<>());
+        Map<String, List<String>> classMap = new HashMap<>();
+        classFileFinder(classpath, classMap);
         List<Class<?>> allDiscoveredClasses = loadClasses(classMap);
 
         return allSpellBookPageClasses(allDiscoveredClasses);

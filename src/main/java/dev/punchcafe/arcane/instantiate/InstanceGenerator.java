@@ -25,6 +25,16 @@ public class InstanceGenerator<T> {
         this.dependencyMap = dependencyMap;
     }
 
+    /**
+     * Future handling for custom dependencies.
+     * Currently we know that a classes generation method equates to it's constructor.
+     * To enable aliasing, we need a map of identifiers( for individual class instances. perhaps ClassName:identifier)
+     * to it's factory method/constructor, and replace that with the current technique of automatically grabbing a
+     * constructor from it's class. an @Incantation on a constructor will act differently from an @Incantation(name) on a method.
+     * Will need to start by scanning an entire dependecy map, mapping name to methodObject. methodObject can be used to rederive other
+     * names, and looked up again in the dependency map until a constructor/method with no args as a leaf.
+     */
+
     public static Map<Class<?>, Object> generateContainer(List<Class<?>> classes) {
         final List<Class<?>> spellBookClasses = classes.stream().filter(clazz -> clazz.isAnnotationPresent(SpellBookPage.class)).collect(Collectors.toList());
         HashMap<Class<?>, List<Class<?>>> dependencyTempMap = new HashMap<>();
