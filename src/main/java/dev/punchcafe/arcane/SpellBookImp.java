@@ -4,15 +4,15 @@ import java.util.Map;
 
 class SpellBookImp implements SpellBook {
 
-    Map<Class<?>, Object> objectMap;
+    Map<String, Object> objectMap;
 
-    SpellBookImp(Map<Class<?>, Object> objectMap){
+    SpellBookImp(Map<String, Object> objectMap){
         this.objectMap = objectMap;
     }
 
     @Override
     public <T> T summon(Class<T> clazz) {
-        return (T) objectMap.get(clazz);
+        return (T) objectMap.get(clazz.getName());
     }
 
     @Override

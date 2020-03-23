@@ -12,3 +12,6 @@ public class AppTest {
         //assertNotNull("app should have a greeting", classUnderTest.getGreeting());
     }
 }
+
+// generate a map of classes to their dependency names. allow searching of the whole thing to discover. use
+// use the map to look up generation, as opposed to just relying on the class
